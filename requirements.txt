@@ -1,0 +1,8 @@
+numpy
+torch>=1.7.1
+torchvision>=0.3.0
+PIL
+tqdm
+pandas
+pyyaml
+git+https://github.com/ildoonet/pytorch-gradual-warmup-lr.git
