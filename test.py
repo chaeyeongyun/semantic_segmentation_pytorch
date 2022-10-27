@@ -120,7 +120,6 @@ def test(model, opt):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    # /data/LiteWRARN_afterdown_restored/test
     parser.add_argument('--data_dir', type=str, default='/content/data/restored_cropweed/proposed_patch_v2/CWFID/test', help='directory that has data')
     parser.add_argument('--save_dir', type=str, default='/content/drive/MyDrive/restored_segtest/proposed_patch_v2/CWFID', help='directory for saving results')
     parser.add_argument('--weights', type=str, default='/content/drive/MyDrive/restored_segtrain/proposed_patch_v2/CWFID/Unet-ep150-0/ckpoints/model_last.pth', help='weights file for test')
@@ -133,7 +132,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_classes', type=int, default=3, help='the number of classes')
     
     opt = parser.parse_args()
-    # assert opt.model in ['unet', 'deeplabv3', 'WRANet'], 'opt.model is not available'
+    assert opt.model in ['unet', 'deeplabv3', 'segnet', 'cgnet'], 'opt.model is not available'
     
     if opt.model == 'unet':
         model = models.Unet()
