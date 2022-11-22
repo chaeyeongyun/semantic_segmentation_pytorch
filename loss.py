@@ -5,57 +5,71 @@ import torch.nn as nn
 from typing import List
 
 ###### dice loss
-def dice_coefficient(pred:torch.Tensor, target:torch.Tensor, num_classes:int, ignore_idx=None):
-    assert pred.shape[0] == target.shape[0]
-    epsilon = 1e-6
-    if num_classes == 2:
-        dice = 0
-        # if both a and b are 1-D arrays, it is inner product of vectors(without complex conjugation)
-        for batch in range(pred.shape[0]):
-            pred_1d = pred[batch].view(-1)
-            target_1d = target[batch].view(-1)
-            inter = (pred_1d * target_1d).sum()
-            sum_sets = pred_1d.sum() + target_1d.sum()
-            dice += (2*inter+epsilon) / (sum_sets + epsilon)
-        return dice / pred.shape[0]
-        
-    
-    elif num_classes == 1:
-        dice = 0
-        pred = F.Sigmoid(pred)
-        for batch in range(pred.shape[0]):
-            pred_1d = pred[batch].view(-1)
-            target_1d = target[batch].view(-1)
-            inter = (pred_1d * target_1d).sum()
-            sum_sets = pred_1d.sum() + target_1d.sum()
-            dice += (2*inter+epsilon) / (sum_sets + epsilon)
-        return dice / pred.shape[0]
-        
-    else:
-        pred = F.softmax(pred, dim=1).float()
-        dice = 0
-        for c in range(num_classes):
-            if c==ignore_idx:
-                continue
-            dice += dice_coefficient(pred[:, c, :, :], torch.where(target==c, 1, 0), 2, ignore_idx)
-        return dice / num_classes 
+###### dice loss
+def dice_coefficient(pred:torch.Tensor, target:torch.Tensor, num_classes:int):
+    """calculate dice coefficient
 
-def dice_loss(pred, target, num_classes, ignore_idx=None):
+    Args:
+        pred (torch.Tensor): (N, num_classes, H, W)
+        target (torch.Tensor): (N, H, W)
+        num_classes (int): the number of classes
+    """
+    
+    if num_classes == 1:
+        target = target.type(pred.type())
+        pred = torch.sigmoid(pred)
+        # target is onehot label
+    else:
+        target = target.type(pred.type()) # target과 pred의 type을 같게 만들어준다.
+        target = torch.eye(num_classes)[target.long()].to(pred.device) # (N, H, W, num_classes)
+        target = target.permute(0, 3, 1, 2) # (N, num_classes, H, W)
+        pred = F.softmax(pred, dim=1)
+    
+    inter = torch.sum(pred*target, dim=(2, 3)) # (N, num_classes)
+    sum_sets = torch.sum(pred+target, dim=(2, 3)) # (N, num_classes)
+    dice_coefficient = (2*inter / (sum_sets+1e-6)).mean(dim=0) # (num_classes)
+    return dice_coefficient
+        
+        
+def dice_loss(pred, target, num_classes, weights:tuple=None):
+    """_summary_
+
+    Args:
+        pred (_type_): _description_
+        target (_type_): _description_
+        num_classes (_type_): _description_
+        ignore_idx (_type_, optional): _description_. Defaults to None.
+        weights(tuple) : the weights to apply to each class
+    Raises:
+        TypeError: _description_
+
+    Returns:
+        _type_: _description_
+    """
     if not isinstance(pred, torch.Tensor) :
         raise TypeError(f"Input type is not a torch.Tensor. Got {type(pred)}")
 
-    dice = dice_coefficient(pred, target, num_classes, ignore_idx)
-    return 1 - dice
+    dice = dice_coefficient(pred, target, num_classes)
+    if weights is not None:
+        dice_loss = 1-dice
+        weights = torch.Tensor(weights)
+        dice_loss = dice_loss * weights
+        dice_loss = dice_loss.mean()
+        
+    else: 
+        dice = dice.mean()
+        dice_loss = 1 - dice
+        
+    return dice_loss
 
 class DiceLoss(nn.Module):
-    def __init__(self, num_classes, ignore_idx=None):
+    def __init__(self, num_classes, weights):
         super().__init__()
         self.num_classes = num_classes
-        self.ignore_idx = ignore_idx
-    
+        self.weights = weights
     def forward(self, pred, target):
-        return dice_loss(pred, target, self.num_classes, self.ignore_idx)
-  
+        return dice_loss(pred, target, self.num_classes, weights=self.weights)
+
   
 ## focal loss
 def _label_to_onehot(target:torch.Tensor, num_classes:int, ignore_idx):
