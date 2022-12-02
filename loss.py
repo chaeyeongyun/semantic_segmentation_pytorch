@@ -63,7 +63,7 @@ def dice_loss(pred, target, num_classes, weights:tuple=None):
     return dice_loss
 
 class DiceLoss(nn.Module):
-    def __init__(self, num_classes, weights):
+    def __init__(self, num_classes, weights:tuple=None):
         super().__init__()
         self.num_classes = num_classes
         self.weights = weights
