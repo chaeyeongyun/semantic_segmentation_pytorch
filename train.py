@@ -296,4 +296,4 @@ if __name__ == '__main__':
         cfg = yaml.load(f, Loader=yaml.SafeLoader)
     
     trainer = Trainer(opt, cfg, model)
-    trainer.train()
+    trainer.train(opt)
