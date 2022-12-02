@@ -295,4 +295,5 @@ if __name__ == '__main__':
     with open(opt.config, 'r') as f:
         cfg = yaml.load(f, Loader=yaml.SafeLoader)
     
-   
+    trainer = Trainer(opt, cfg, model)
+    trainer.train()
