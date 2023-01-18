@@ -11,10 +11,9 @@ class Measurement:
     
     def _make_confusion_matrix(self, pred:np.ndarray, target:np.ndarray):
         """make confusion matrix
-
         Args:
-            pred (numpy.ndarray): segmentation model's prediction score matrix
-            target (numpy.ndarray): label
+            pred (numpy.ndarray): segmentation model's prediction score matrix (N, C, H, W)
+            target (numpy.ndarray): label (N, H, W)
             num_classes (int): the number of classes
         """
         assert pred.shape[0] == target.shape[0], "pred and target ndarray's batchsize must have same value"
@@ -24,6 +23,10 @@ class Measurement:
         
         pred_1d = np.reshape(pred_label, (N, -1)) # (N, HxW)
         target_1d = np.reshape(target, (N, -1)) # (N, HxW)
+        if self.ignore_idx is not None:
+            use_idx = np.where(target_1d!=self.ignore_idx)
+            pred_1d = pred_1d[use_idx]
+            target_1d = target_1d[use_idx]
         # 3 * gt + pred = category
         cats = 3 * target_1d + pred_1d # (N, HxW)
         conf_mat = np.apply_along_axis(lambda x: np.bincount(x, minlength=self.num_classes**2), axis=-1, arr=cats) # (N, 9)
@@ -39,16 +42,16 @@ class Measurement:
             the accuracy per pixel : acc(int)
         '''
         N = pred.shape[0]
-        pred = pred.argmax(axis=1) # (N, H, W)
-        pred = np.reshape(pred, (pred.shape[0], pred.shape[1]*pred.shape[2])) # (N, HxW)
-        target = np.reshape(target, (target.shape[0], target.shape[1]*target.shape[2])) # (N, HxW)
+        pred_label = pred.argmax(axis=1) # (N, H, W)
+        pred_1d = np.reshape(pred_label, (N, -1)) # (N, HxW)
+        target_1d = np.reshape(target, (N, -1)) # (N, HxW)
         
-        if self.ignore_idx != None:
-             not_ignore_idxs = np.where(target != self.ignore_idx) # where target is not equal to ignore_idx
-             pred = pred[not_ignore_idxs]
-             target = target[not_ignore_idxs]
+        if self.ignore_idx is not None:
+            use_idx = np.where(target_1d!=self.ignore_idx)
+            pred_1d = pred_1d[use_idx]
+            target_1d = target_1d[use_idx]
              
-        return np.mean(np.sum(pred==target, axis=-1)/pred.shape[-1])
+        return np.mean(np.sum(pred_1d==target_1d, axis=-1)/pred_1d.shape[-1])
     
     def miou(self, conf_mat:np.ndarray, pred:np.ndarray, target:np.ndarray):
         iou_list = []
