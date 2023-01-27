@@ -27,8 +27,8 @@ class Measurement:
             use_idx = np.where(target_1d!=self.ignore_idx)
             pred_1d = pred_1d[use_idx]
             target_1d = target_1d[use_idx]
-        # 3 * gt + pred = category
-        cats = 3 * target_1d + pred_1d # (N, HxW)
+        # num_classes * gt + pred = category
+        cats = self.num_classes * target_1d + pred_1d # (N, HxW)
         conf_mat = np.apply_along_axis(lambda x: np.bincount(x, minlength=self.num_classes**2), axis=-1, arr=cats) # (N, 9)
         conf_mat = np.reshape(conf_mat, (N, self.num_classes, self.num_classes)) # (N, 3, 3)
         return conf_mat
