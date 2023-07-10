@@ -17,7 +17,7 @@ def dice_coefficient(pred:torch.Tensor, target:torch.Tensor, num_classes:int, ig
     b, c, h, w = pred.shape[:]
     pred = pred.reshape(b, c, -1)
     target = target.reshape(b, -1)
-    mask = (target!=ignore_index)
+    mask = target!=ignore_index
     # pred = pred[torch.cat([target!=ignore_index]*c, dim=1)]
     # target = target[target!=ignore_index]
     pred = pred * torch.stack([mask]*3, dim=1)
@@ -64,7 +64,7 @@ def dice_loss(pred:torch.Tensor, target:torch.Tensor, num_classes:int=3, weight:
     return dice_loss
 
 class DiceLoss(nn.Module):
-    def __init__(self, num_classes, weight:torch.Tensor=None, ignore_index=None):
+    def __init__(self, num_classes, weight:torch.Tensor=None, ignore_index=-100):
         super().__init__()
         self.num_classes = num_classes
         self.weight = weight
